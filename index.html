@@ -11,9 +11,8 @@
   <br>
   <input type="text" id="keyword" placeholder="输入查询关键字" style="width:200px"/>
   <button id="query">查询</button>
-  <script type="text/javascript" src="./node_modules/crypto-js/crypto-js.js"></script>
-  <!-- <script src="./mock-min.js"></script> -->
-
+  <!-- <script type="text/javascript" src="./node_modules/crypto-js/crypto-js.js"></script> -->
+  <script src="https://cdn.jsdelivr.net/npm/mockjs@1.1.0/dist/mock-min.js"></script>
   <script src="./porter-stemmer.js"></script>
   <script src="./segment.js"></script>
   <script src="./fulltext.js"></script>
@@ -169,7 +168,7 @@
       var transaction = db.transaction(['msg1', 'documents'], 'readwrite');
       var objectStore = transaction.objectStore('msg1');
       var ftsStore = transaction.objectStore('documents');
-      for (var i = 1; i < 1000; i++) {
+      for (var i = 0; i < number; i++) {
         const msg = Mock.mock(obj);
         objectStore.add(msg);
         ftsStore.put({
