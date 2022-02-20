@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <input type="text" id="number" placeholder="输入插入数据库的消息数量" style="width:200px"/>
+  <button id="insert">插入若干条消息</button>
+  <br>
+  <input type="text" id="keyword" placeholder="输入查询关键字" style="width:200px"/>
+  <button id="query">查询</button>
+  <script type="text/javascript" src="./node_modules/crypto-js/crypto-js.js"></script>
+  <!-- <script src="./mock-min.js"></script> -->
+
+  <script src="./porter-stemmer.js"></script>
+  <script src="./segment.js"></script>
+  <script src="./fulltext.js"></script>
+
+  <script type="text/javascript">
+    // var encrypted = CryptoJS.AES(...);
+    // var encrypted = CryptoJS.SHA256(...);
+
+    // 这样一条 msg，大概是 2.11857421875 kb，那么 200mb 的 db 乐观估计是十万条。
+    var obj = {
+      cc: true,
+      "flow|1": [
+        "out",
+        "in",
+      ],
+      "from|1": [
+        "cjhz1",
+        "wangsitu1",
+        "cs1",
+        "cs2",
+        "cs3",
+        "cs4"
+      ],
+      "fromClientType|1": [
+        "Web",
+        "Android",
+        "IOS"
+      ],
+      "fromDeviceId|1": [
+        "2fb0d8c26d874a4790a92719a186bea0",
+        "3ab0ddc2rtjk4a4790a92719o98jbAa1",
+        "4ab0ddc2rtjk4a4790a92719o98jbAa1",
+      ],
+      "fromNick|1": [
+        "cjhz1",
+        "wangsitu1",
+        "cs1",
+        "cs2",
+        "cs3",
+        "cs4"
+      ],
+      "idClient": /\w{32}/,
+      "idServer": /\d{12}/,
+      isHistoryable: true,
+      isLocal: false,
+      isOfflinable: true,
+      isPushable: true,
+      isReplyMsg: true,
+      isRoamingable: true,
+      isSyncable: true,
+      isUnreadable: true,
+      needMsgReceipt: false,
+      needPushNick: true,
+      resend: false,
+      scene: "p2p",
+      "sessionId": /p2p-cs\d{3}/,
+      status: "success",
+      "target|1": [
+        "cjhz1",
+        "wangsitu1",
+        "cs1",
+        "cs2",
+        "cs3",
+        "cs4"
+      ],
+      text: '@cparagraph',
+      "time|1600000000000-1700000000000": 1,
+      "to|1": [
+        "cjhz1",
+        "wangsitu1",
+        "cs1",
+        "cs2",
+        "cs3",
+        "cs4"
+      ],
+      type: "text",
+      "userUpdateTime|1600000000000-1700000000000": 1
+    }
+
+    // indexedDB.deleteDatabase('db-fulltext');
+
+    var request = indexedDB.open('db-fulltext');
+    var db;
+    request.onerror = function (event) {
+      console.log('数据库打开报错', event);
+    };
+    request.onsuccess = function (event) {
+      db = request.result;
+      console.log('数据库打开成功');
+
+      // var transaction = db.transaction(['msg1'], 'readwrite');
+
+      // console.time('doAdd100');
+      // // do add 100 times
+      // transaction.oncomplete = function (event) {
+      //   console.timeEnd('doAdd100');
+      //   console.log('transaction success');
+      // };
+
+      // transaction.onerror = function (event) {
+      //   console.log('transaction error: ' + transaction.error);
+      // };
+
+      // var objectStore = transaction.objectStore('msg1');
+      // for (var i = 1; i < 100000; i++) {
+      //   // let key = `${obj.idClient}${i}`
+      //   // data = CryptoJS.DES.encrypt(JSON.stringify(obj), "thesecreate123").toString()
+
+      //   // console.log(key, data)
+      //   objectStore.add({
+      //     // d: data,
+      //     // idClient: key,
+
+      //     ...Mock.mock(obj),
+      //   });
+      // }
+    };
+
+    request.onupgradeneeded = function (event) {
+      db = event.target.result;
+      var objectStore;
+      if (!db.objectStoreNames.contains('msg1')) {
+        var objectStore = db.createObjectStore(
+          'msg1',
+          { keyPath: 'idClient' }
+        );
+        const store = db.createObjectStore('documents', { keyPath: 'docId' });
+        store.createIndex('fulltext', 'terms', { multiEntry: true });
+      }
+    }
+
+
+    // function read() {
+    //   var transaction = db.transaction(['msg1']);
+    //   var objectStore = transaction.objectStore('msg1');
+    //   var request = objectStore.get(1);
+
+    //   request.onerror = function(event) {
+    //     console.log('事务失败');
+    //   };
+
+    //   request.onsuccess = function( event) {
+    //       if (request.result) {
+    //         console.log('GET: ' + request.result);
+    //       } else {
+    //         console.log('未获得数据记录');
+    //       }
+    //   };
+    // }
+
+    document.getElementById('insert').addEventListener('click', function() {
+      var number = document.getElementById('number').value || 100
+      var transaction = db.transaction(['msg1', 'documents'], 'readwrite');
+      var objectStore = transaction.objectStore('msg1');
+      var ftsStore = transaction.objectStore('documents');
+      for (var i = 1; i < 1000; i++) {
+        const msg = Mock.mock(obj);
+        objectStore.add(msg);
+        ftsStore.put({
+          docId: msg.idClient,
+          terms: FullText.tokenize(msg.text)
+        });
+      }
+      transaction.oncomplete = function (event) {
+        console.log('transaction success');
+      };
+    })
+
+    document.getElementById('query').addEventListener('click', function() {
+      var keyword = document.getElementById('keyword').value
+      if (!keyword) {
+        alert('No keyword for search!')
+        return
+      }
+      console.time('query')
+      const tx = db.transaction('documents');
+      const index = tx.objectStore('documents').index('fulltext');
+
+      FullText.search(index, keyword, 'zh-CN', ids => {
+        console.log('keyword:', JSON.stringify(keyword), 'results:', ids)
+        console.timeEnd('query')
+      })
+    })
+
+  </script>
+</body>
+</html>
