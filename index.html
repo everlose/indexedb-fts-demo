@@ -12,7 +12,7 @@
   <input type="text" id="keyword" placeholder="输入查询关键字" style="width:200px"/>
   <button id="query">查询</button>
   <!-- <script type="text/javascript" src="./node_modules/crypto-js/crypto-js.js"></script> -->
-  <script src="https://cdn.jsdelivr.net/npm/mockjs@1.1.0/dist/mock-min.js"></script>
+  <script src="./mock-min.js"></script>
   <script src="./porter-stemmer.js"></script>
   <script src="./segment.js"></script>
   <script src="./fulltext.js"></script>
@@ -133,6 +133,7 @@
 
     request.onupgradeneeded = function (event) {
       db = event.target.result;
+      console.log('数据库正在创建')
       var objectStore;
       if (!db.objectStoreNames.contains('msg1')) {
         var objectStore = db.createObjectStore(
@@ -165,6 +166,7 @@
 
     document.getElementById('insert').addEventListener('click', function() {
       var number = document.getElementById('number').value || 100
+      number = +number
       var transaction = db.transaction(['msg1', 'documents'], 'readwrite');
       var objectStore = transaction.objectStore('msg1');
       var ftsStore = transaction.objectStore('documents');
